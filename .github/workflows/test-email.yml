@@ -1,0 +1,62 @@
+name: Test Email
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Send test email
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import ssl
+          import smtplib
+          from email.message import EmailMessage
+          from email.utils import formatdate, make_msgid
+
+          required = ("SMTP_USER", "SMTP_PASSWORD", "MAIL_TO")
+          missing = [name for name in required if not os.getenv(name)]
+          if missing:
+              raise SystemExit("缺少配置：" + ", ".join(missing))
+
+          sender = os.environ["SMTP_USER"].strip()
+          password = os.environ["SMTP_PASSWORD"].strip()
+          recipient = os.environ["MAIL_TO"].strip()
+
+          message = EmailMessage()
+          message["Subject"] = "AI 简讯：GitHub Actions 邮件测试"
+          message["From"] = sender
+          message["To"] = recipient
+          message["Date"] = formatdate(localtime=False)
+          message["Message-ID"] = make_msgid()
+          message.set_content(
+              "小陈，你好！\n\n"
+              "这是由 GitHub Actions 云端程序发送的测试邮件。\n"
+              "收到这封邮件，说明云端发信流程已经跑通。\n\n"
+              "下一步可以接入 AI 资讯获取、摘要生成和每日定时运行。"
+          )
+
+          print("正在连接邮件服务器……")
+          server = smtplib.SMTP_SSL(
+              "smtp.qq.com",
+              465,
+              context=ssl.create_default_context(),
+              timeout=30,
+          )
+          try:
+              server.login(sender, password)
+              server.send_message(message)
+              print("邮件服务器已接受邮件，请检查收件箱和垃圾邮件。")
+          finally:
+              server.close()
+          PY
