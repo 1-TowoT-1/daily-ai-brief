@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # UTC 00:00 = 北京时间 08:37
-    - cron: "37 0 * * *"
+    - cron: "2 2 * * *"
 
 permissions: {}
 
